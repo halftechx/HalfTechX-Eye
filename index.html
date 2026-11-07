@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HalfTechX · Pairing Code Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root{
+    --bg:#070b16;
+    --card:rgba(16,22,42,.72);
+    --card-solid:#0e1428;
+    --line:rgba(255,255,255,.09);
+    --text:#eaf0ff;
+    --muted:#8d99b8;
+    --a1:#4f8cff;
+    --a2:#9b5cff;
+    --ok:#2ee59d;
+    --warn:#ffc24b;
+    --err:#ff5d73;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{min-height:100%;}
+  body{
+    font-family:'Outfit',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;align-items:center;
+    padding:28px 16px 40px;line-height:1.55;
+    position:relative;overflow-x:hidden;
+  }
+  /* background glow */
+  body::before,body::after{
+    content:"";position:fixed;width:520px;height:520px;border-radius:50%;
+    filter:blur(110px);opacity:.35;z-index:-1;pointer-events:none;
+  }
+  body::before{background:var(--a1);top:-180px;left:-160px;}
+  body::after{background:var(--a2);bottom:-200px;right:-160px;}
+
+  /* top bar */
+  .topbar{width:100%;max-width:460px;display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem;letter-spacing:.2px;}
+  .logo-mark{
+    width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-size:1rem;
+    box-shadow:0 8px 24px rgba(79,140,255,.35);
+  }
+  .logo small{display:block;font-weight:400;font-size:.7rem;color:var(--muted);letter-spacing:.3px;margin-top:-2px;}
+  .live{display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--muted);padding:6px 12px;border:1px solid var(--line);border-radius:30px;background:var(--card);}
+  .live i{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+  .live.on i{background:var(--ok);box-shadow:0 0 10px var(--ok);}
+
+  /* card */
+  .card{
+    width:100%;max-width:460px;background:var(--card);
+    border:1px solid var(--line);border-radius:24px;padding:30px 26px;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+  }
+  .card h1{font-size:1.7rem;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;}
+  .card h1 span{background:linear-gradient(90deg,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .card .lead{color:var(--muted);font-size:.93rem;margin-bottom:24px;}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+  .stat{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.03);}
+  .stat b{display:block;font-size:1.35rem;font-weight:700;font-family:'Space Mono',monospace;}
+  .stat span{font-size:.75rem;color:var(--muted);}
+
+  label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:8px;}
+  .field{position:relative;margin-bottom:14px;}
+  .field i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+  .field input{
+    width:100%;padding:15px 16px 15px 44px;border-radius:14px;
+    border:1px solid var(--line);background:rgba(5,8,18,.7);color:var(--text);
+    font-family:'Space Mono',monospace;font-size:.95rem;transition:border-color .2s,box-shadow .2s;
+  }
+  .field input::placeholder{color:#4d5878;}
+  .field input:focus{outline:none;border-color:var(--a1);box-shadow:0 0 0 4px rgba(79,140,255,.18);}
+  .hint{font-size:.76rem;color:var(--muted);margin:-4px 0 18px;}
+
+  .btn{
+    width:100%;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+    padding:15px 20px;border:none;border-radius:14px;cursor:pointer;
+    font-family:inherit;font-weight:700;font-size:.98rem;color:#fff;
+    background:linear-gradient(135deg,var(--a1),var(--a2));
+    box-shadow:0 12px 30px rgba(110,100,255,.35);transition:transform .15s,box-shadow .2s,opacity .2s;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 16px 36px rgba(110,100,255,.45);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+  .btn:focus-visible,.code-box:focus-visible,.chip:focus-visible,.x:focus-visible{outline:2px solid #fff;outline-offset:3px;}
+  .btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--line);box-shadow:none;color:var(--text);}
+  .btn.ghost:hover{background:rgba(255,255,255,.08);}
+
+  #status{display:none;margin-top:16px;padding:13px 15px;border-radius:12px;font-size:.88rem;border:1px solid var(--line);}
+  #status.show{display:block;}
+  #status.success{color:var(--ok);background:rgba(46,229,157,.08);border-color:rgba(46,229,157,.3);}
+  #status.error{color:#ff9aa8;background:rgba(255,93,115,.08);border-color:rgba(255,93,115,.3);}
+  #status.warning{color:var(--warn);background:rgba(255,194,75,.08);border-color:rgba(255,194,75,.3);}
+
+  /* code result */
+  .result{display:none;margin-top:22px;text-align:center;animation:pop .35s ease;}
+  .result.show{display:block;}
+  @keyframes pop{from{opacity:0;transform:scale(.97);}to{opacity:1;transform:scale(1);}}
+  .code-box{
+    font-family:'Space Mono',monospace;font-weight:700;font-size:2rem;letter-spacing:.2em;
+    padding:22px 10px;border-radius:16px;cursor:pointer;user-select:all;
+    background:rgba(5,8,18,.75);border:1px dashed rgba(79,140,255,.6);
+    background-image:linear-gradient(90deg,#8db4ff,#c4a0ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+    position:relative;
+  }
+  .code-wrap{border:1px dashed rgba(79,140,255,.6);border-radius:16px;background:rgba(5,8,18,.75);padding:4px;}
+  .code-wrap .code-box{border:none;background-color:transparent;}
+  .code-wrap.linked{border-color:var(--ok);}
+  .result .row{display:flex;gap:10px;margin-top:12px;}
+  .result .row .btn{padding:12px 14px;font-size:.88rem;}
+  .timer{margin-top:14px;font-size:.8rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px;}
+  .timer .dot{width:7px;height:7px;border-radius:50%;background:var(--warn);animation:blink 1.2s infinite;}
+  @keyframes blink{50%{opacity:.25;}}
+
+  /* steps */
+  .steps{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);}
+  .steps h2{font-size:.95rem;font-weight:600;margin-bottom:12px;}
+  .steps ol{padding-left:20px;color:var(--muted);font-size:.86rem;}
+  .steps li{margin-bottom:6px;}
+  .steps li::marker{color:var(--a1);font-weight:700;}
+
+  .links{width:100%;max-width:460px;margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:30px;
+    font-size:.82rem;color:var(--text);text-decoration:none;background:var(--card);
+    border:1px solid var(--line);transition:border-color .2s,background .2s;
+  }
+  .chip:hover{border-color:var(--a1);background:rgba(79,140,255,.1);}
+  .chip i{color:var(--a1);}
+
+  footer{margin-top:26px;color:var(--muted);font-size:.78rem;text-align:center;}
+  footer b{color:var(--text);}
+
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:rgba(4,6,14,.78);backdrop-filter:blur(6px);opacity:0;visibility:hidden;transition:.25s;}
+  .modal.active{opacity:1;visibility:visible;}
+  .sheet{width:100%;max-width:420px;background:var(--card-solid);border:1px solid var(--line);border-radius:22px;padding:24px;
+    transform:translateY(14px);transition:transform .25s;}
+  .modal.active .sheet{transform:none;}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .sheet h3{font-size:1.15rem;}
+  .x{background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;line-height:1;border-radius:6px;}
+  .x:hover{color:var(--text);}
+  .sheet p{color:var(--muted);font-size:.86rem;margin-bottom:16px;}
+  .sheet .list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .sheet .list a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);
+    color:var(--text);text-decoration:none;font-size:.9rem;background:rgba(255,255,255,.03);transition:.2s;}
+  .sheet .list a:hover{border-color:var(--a1);background:rgba(79,140,255,.08);}
+  .sheet .list i{color:var(--a1);width:18px;text-align:center;}
+
+  #toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,90px);background:#fff;color:#0a0f20;
+    padding:11px 20px;border-radius:30px;font-weight:600;font-size:.85rem;transition:transform .3s;z-index:60;}
+  #toast.show{transform:translate(-50%,0);}
+
+  @media(max-width:420px){
+    .card{padding:24px 18px;border-radius:20px;}
+    .code-box{font-size:1.5rem;}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark"><i class="fas fa-bolt"></i></div>
+    <div>HalfTechX<small>WhatsApp bot</small></div>
+  </div>
+  <div class="live" id="live"><i></i><span id="liveText">Connecting</span></div>
+</div>
+
+<main class="card">
+  <h1>Pairing <span>code</span></h1>
+  <p class="lead">Link your WhatsApp to HalfTechX in under a minute. No QR scan needed.</p>
+
+  <div class="stats">
+    <div class="stat"><b id="activeSockets">0</b><span>Active sessions</span></div>
+    <div class="stat"><b id="totalUsers">0</b><span>Total users</span></div>
+  </div>
+
+  <label for="phone">WhatsApp number</label>
+  <div class="field">
+    <i class="fas fa-phone"></i>
+    <input type="tel" id="phone" inputmode="numeric" autocomplete="tel" placeholder="923001234567">
+  </div>
+  <p class="hint">Country code first. No +, spaces or dashes.</p>
+
+  <button class="btn" id="requestPairing" type="button"><i class="fas fa-key"></i> Get pairing code</button>
+
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <div class="result" id="result">
+    <div class="code-wrap" id="codeWrap">
+      <div class="code-box" id="pairingCode" tabindex="0" role="button" aria-label="Pairing code, press to copy"></div>
+    </div>
+    <div class="row">
+      <button class="btn ghost" id="copyBtn" type="button"><i class="far fa-copy"></i> Copy code</button>
+      <button class="btn ghost" id="newBtn" type="button"><i class="fas fa-rotate-right"></i> New code</button>
+    </div>
+    <div class="timer" id="timer"><span class="dot"></span><span id="timerText">Waiting for your device to link</span></div>
+  </div>
+
+  <div class="steps">
+    <h2>How to link</h2>
+    <ol>
+      <li>Enter your number and tap <b>Get pairing code</b>.</li>
+      <li>Open WhatsApp, then <b>Settings → Linked devices → Link a device</b>.</li>
+      <li>Choose <b>Link with phone number instead</b>.</li>
+      <li>Type the 8-character code shown here.</li>
+    </ol>
+  </div>
+</main>
+
+<nav class="links" id="links" aria-label="Official channels"></nav>
+
+<footer>&copy; <span id="year"></span> <b>HalfTechX</b>. All rights reserved.</footer>
+
+<!-- Channel modal -->
+<div id="channelModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h3 id="mTitle">Join our channels first</h3>
+      <button class="x" id="modalClose" aria-label="Close">&times;</button>
+    </div>
+    <p>Follow the official channels to get updates and support.</p>
+    <div class="list" id="modalList"></div>
+    <button class="btn" id="confirmFollow" type="button"><i class="fas fa-check"></i> I've followed them</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+/* ---------- Config: replace these with your HalfTechX links ---------- */
+const CHANNELS = [
+  { icon:'fab fa-whatsapp', label:'WhatsApp Updates',       url:'https://whatsapp.com/channel/0029VaGiJKfIiRoybPBMTy38' },
+  { icon:'fab fa-whatsapp', label:'WhatsApp Support',       url:'https://whatsapp.com/channel/0029Vb7SDZ31iUxhzG0W4t1M' },
+  { icon:'fab fa-whatsapp', label:'WhatsApp Announcements', url:'https://whatsapp.com/channel/0029VbCkaqb5fM5VgpvRJc2Y' },
+  { icon:'fab fa-youtube',  label:'YouTube',                url:'https://www.youtube.com/@Teamsyedhaker' }
+];
+const CODE_LIFETIME = 60;      // seconds the pairing code stays valid
+const REQUEST_TIMEOUT = 30000; // ms to wait for the server before giving up
+const STORE_KEY = 'halftechx_followed';
+
+/* ---------- Helpers ---------- */
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+const toast = $('toast'); let toastT;
+function showToast(msg){
+  toast.textContent = msg; toast.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(()=>toast.classList.remove('show'), 2000);
+}
+const statusEl = $('status');
+function setStatus(msg,type){
+  if(!msg){ statusEl.className=''; statusEl.textContent=''; return; }
+  statusEl.textContent = msg; statusEl.className = 'show ' + (type||'');
+}
+
+/* ---------- Render channel links ---------- */
+$('links').innerHTML = CHANNELS.map(c =>
+  `<a class="chip" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer"><i class="${esc(c.icon)}"></i>${esc(c.label)}</a>`).join('');
+$('modalList').innerHTML = CHANNELS.map(c =>
+  `<a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer"><i class="${esc(c.icon)}"></i><span>${esc(c.label)}</span></a>`).join('');
+$('year').textContent = new Date().getFullYear();
+
+/* ---------- Channel modal ---------- */
+const modal = $('channelModal');
+const closeModal = () => modal.classList.remove('active');
+window.addEventListener('load', ()=>{
+  if(!store.get(STORE_KEY)) setTimeout(()=>modal.classList.add('active'), 900);
+});
+$('modalClose').addEventListener('click', closeModal);
+modal.addEventListener('click', e=>{ if(e.target === modal) closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeModal(); });
+$('confirmFollow').addEventListener('click', ()=>{ store.set(STORE_KEY,'1'); closeModal(); });
+
+/* ---------- Pairing logic ---------- */
+const phoneInput = $('phone');
+const requestBtn = $('requestPairing');
+const result = $('result');
+const codeWrap = $('codeWrap');
+const pairingCode = $('pairingCode');
+const timerText = $('timerText');
+const BTN_HTML = '<i class="fas fa-key"></i> Get pairing code';
+
+let userId = null, pending = false, reqTimeout = null, countdown = null, currentCode = '';
+
+function resetButton(){
+  pending = false; clearTimeout(reqTimeout);
+  requestBtn.disabled = false; requestBtn.innerHTML = BTN_HTML;
+}
+function formatCode(raw){
+  const c = String(raw).replace(/[^A-Za-z0-9]/g,'').toUpperCase();
+  return c.length === 8 ? c.slice(0,4) + '-' + c.slice(4) : c;
+}
+function stopCountdown(){ clearInterval(countdown); countdown = null; }
+function startCountdown(){
+  stopCountdown();
+  let left = CODE_LIFETIME;
+  const tick = ()=>{
+    if(left <= 0){
+      stopCountdown();
+      timerText.textContent = 'Code expired. Request a new one.';
+      return;
+    }
+    timerText.textContent = `Waiting for your device to link (${left}s)`;
+    left--;
+  };
+  tick(); countdown = setInterval(tick, 1000);
+}
+
+async function copyCode(){
+  if(!currentCode) return;
+  const plain = currentCode.replace(/-/g,'');
+  try{
+    await navigator.clipboard.writeText(plain);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = plain; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(_){}
+    ta.remove();
+  }
+  showToast('Code copied');
+}
+
+function requestCode(){
+  if(pending) return;
+  if(typeof io === 'undefined' || !socket){
+    setStatus('Cannot reach the server. Reload the page and try again.', 'error');
+    return;
+  }
+  const number = phoneInput.value.replace(/\D/g,'');
+  if(number.length < 10 || number.length > 15){
+    setStatus('Enter a valid number with country code, 10 to 15 digits.', 'error');
+    phoneInput.focus();
+    return;
+  }
+  if(!socket.connected){
+    setStatus('Not connected to the server yet. Wait a moment and try again.', 'warning');
+    return;
+  }
+  pending = true;
+  requestBtn.disabled = true;
+  requestBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Requesting...';
+  setStatus('Requesting your pairing code...', 'warning');
+  result.classList.remove('show'); stopCountdown();
+
+  if(!userId) userId = 'user_' + Math.random().toString(36).slice(2,11);
+  socket.emit('set-user', userId);
+  socket.emit('pair-request', { userId, number });
+
+  reqTimeout = setTimeout(()=>{
+    resetButton();
+    setStatus('The server took too long to respond. Try again.', 'error');
+  }, REQUEST_TIMEOUT);
+}
+
+requestBtn.addEventListener('click', requestCode);
+phoneInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') requestCode(); });
+$('copyBtn').addEventListener('click', copyCode);
+$('newBtn').addEventListener('click', ()=>{ result.classList.remove('show'); stopCountdown(); setStatus(''); phoneInput.focus(); });
+pairingCode.addEventListener('click', copyCode);
+pairingCode.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); copyCode(); } });
+
+/* ---------- Socket events ---------- */
+let socket = null;
+try{ socket = (typeof io !== 'undefined') ? io() : null; }catch(e){ socket = null; }
+
+const live = $('live'), liveText = $('liveText');
+function setLive(on, text){ live.classList.toggle('on', on); liveText.textContent = text; }
+
+if(!socket){
+  setLive(false, 'Offline');
+  setStatus('Could not load the connection library. Reload the page.', 'error');
+}else{
+  socket.on('connect', ()=> setLive(true, 'Online'));
+  socket.on('disconnect', ()=>{ setLive(false, 'Reconnecting'); if(pending){ resetButton(); setStatus('Connection lost. Try again.', 'error'); } });
+  socket.on('connect_error', ()=> setLive(false, 'Offline'));
+
+  socket.on('pairing-code', code=>{
+    if(!pending && !code) return;
+    resetButton();
+    if(!code){ setStatus('The server returned an empty code. Try again.', 'error'); return; }
+    currentCode = formatCode(code);
+    pairingCode.textContent = currentCode;
+    codeWrap.classList.remove('linked');
+    result.classList.add('show');
+    setStatus(`Code ready. Enter it in WhatsApp within ${CODE_LIFETIME} seconds.`, 'success');
+    startCountdown();
+  });
+
+  socket.on('pair-error', msg=>{
+    resetButton();
+    setStatus((typeof msg === 'string' && msg) ? msg : 'Could not generate a pairing code. Try again.', 'error');
+  });
+
+  socket.on('connection-status', status=>{
+    if(status && status.connected){
+      stopCountdown();
+      pairingCode.textContent = 'LINKED';
+      codeWrap.classList.add('linked');
+      timerText.textContent = 'Device linked';
+      setStatus('Device linked successfully.', 'success');
+      showToast('Connected');
+      setTimeout(()=>location.reload(), 3000);
+    }
+  });
+
+  socket.on('stats', data=>{
+    if(!data) return;
+    if(data.activeSockets !== undefined) $('activeSockets').textContent = data.activeSockets;
+    if(data.totalUsers !== undefined) $('totalUsers').textContent = data.totalUsers;
+  });
+}
+</script>
+</body>
+</html>
